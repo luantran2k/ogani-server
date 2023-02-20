@@ -38,8 +38,6 @@ export class AuthService {
     private mailService: MailService,
   ) {}
   async register(createUserDto: CreateUserDto): Promise<any> {
-    console.log(createUserDto, this.verificationCodes);
-
     // Check if user exists
     const userExists = await this.usersService.findByUsername(
       createUserDto.username,
@@ -55,15 +53,15 @@ export class AuthService {
       throw new BadRequestException('Email đã được sử dụng');
     }
 
-    const isValidVerificationCode = this.verificationCodes.find(
-      (code) =>
-        code.code === createUserDto.verificationCode &&
-        code.email === createUserDto.email,
-    );
+    // const isValidVerificationCode = this.verificationCodes.find(
+    //   (code) =>
+    //     code.code === createUserDto.verificationCode &&
+    //     code.email === createUserDto.email,
+    // );
 
-    if (!isValidVerificationCode) {
-      throw new BadRequestException('Invalid verification code');
-    }
+    // if (!isValidVerificationCode) {
+    //   throw new BadRequestException('Invalid verification code');
+    // }
 
     // Hash password
     const hash = await this.hashData(createUserDto.password);
@@ -257,7 +255,6 @@ export class AuthService {
       email,
       code: String(newCode),
     });
-    console.log(this.verificationCodes);
     setTimeout(() => {
       this.verificationCodes.splice(codeIndex, 1);
     }, SEND_MAIL_WAIT_TIME);

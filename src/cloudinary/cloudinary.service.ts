@@ -44,6 +44,13 @@ export class CloudinaryService {
     return res;
   }
 
+  async removeFiles(public_id: string[], resource_type: resourceType) {
+    const removePromises = public_id.map(async (public_id) => {
+      return this.removeFile(public_id, resource_type);
+    });
+    return Promise.all(removePromises);
+  }
+
   uploadFiles(files: Express.Multer.File[], options: UploadOptions) {
     const filesUpload = files.map((file) => {
       return this.uploadFile(file, options);

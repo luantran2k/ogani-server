@@ -3,7 +3,7 @@ import { createWriteStream, unlink } from 'fs';
 import { get } from 'https';
 import muhammara, { createReader, recrypt } from 'muhammara';
 import { Period } from 'src/types/type';
-const Ultis = {
+const ultis = {
   getPublicId: (url: string) => {
     const index = url.indexOf(process.env.CLOUDINARY_ROOT_FOLDER + '/' || '/');
     const filePath = url.slice(index);
@@ -105,4 +105,4 @@ const Ultis = {
       : this.getFirstDayOfYear(date);
   },
 };
-export default Ultis;
+export default ultis;

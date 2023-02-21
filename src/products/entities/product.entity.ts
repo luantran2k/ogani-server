@@ -1,12 +1,10 @@
 import { Product } from '@prisma/client';
 export class ProductEntity implements Product {
-  quantity: number;
   id: number;
   name: string;
   images: string[];
-  price: number;
-  salePecent: number;
-  isDeleted: boolean;
+  description: string;
+  details: string;
   createdAt: Date;
   updatedAt: Date;
 }

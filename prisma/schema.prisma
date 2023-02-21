@@ -72,6 +72,8 @@ model Product {
   id                Int                 @id @default(autoincrement())
   name              String
   images            String[]
+  description       String              @default("")
+  details           String              @default("")
   createdAt         DateTime            @default(now())
   updatedAt         DateTime            @updatedAt
   ProductInCategory ProductInCategory[]
@@ -81,14 +83,14 @@ model Product {
 }
 
 model ProductVariants {
-  id         Int         @id @default(autoincrement())
-  product    Product     @relation(fields: [productId], references: [id])
-  productId  Int
-  price      Float
-  salePecent Int?        @default(0)
-  size       String
-  quantity   Int         @default(0)
-  OrderItem  OrderItem[]
+  id          Int         @id @default(autoincrement())
+  product     Product     @relation(fields: [productId], references: [id])
+  productId   Int
+  price       Float
+  salePercent Int?        @default(0)
+  variant     String
+  quantity    Int         @default(0)
+  OrderItem   OrderItem[]
 }
 
 model ProductCategory {

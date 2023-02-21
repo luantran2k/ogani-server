@@ -1,3 +1,4 @@
+import { CreateProductVariantDto } from './create-product-variant.dto';
 import { Type } from 'class-transformer';
 import {
   IsArray,
@@ -9,6 +10,7 @@ import {
   MaxLength,
   Min,
   MinLength,
+  Validator,
 } from 'class-validator';
 
 export class CreateProductDto {
@@ -18,22 +20,20 @@ export class CreateProductDto {
   @MaxLength(250)
   name: string;
 
-  @IsArray()
   @IsNotEmpty()
-  images: string[];
+  categories: number[];
 
-  @IsNumber()
-  @Type(() => Number)
-  price: number;
+  // @IsArray()
+  // @IsNotEmpty()
+  // images: string[];
 
-  @IsNumber()
   @IsOptional()
-  @Type(() => Number)
-  @Max(100)
-  @Min(0)
-  salePecent: number;
+  @IsString()
+  description: string;
 
-  @IsNumber()
-  @Type(() => Number)
-  quantity: number;
+  @IsOptional()
+  @IsString()
+  details: string;
+
+  vairiants: CreateProductVariantDto[];
 }

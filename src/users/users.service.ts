@@ -7,7 +7,7 @@ import * as bcrypt from 'bcrypt';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Period } from 'src/types/type';
-import Ultis from 'src/Utils/Ultis';
+import ultis from 'src/utils/ultis';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
@@ -120,7 +120,7 @@ export class UsersService {
   }
 
   async countNewUser(period: Period = 'week') {
-    const beginDate = Ultis.getBeginDate(period, new Date());
+    const beginDate = ultis.getBeginDate(period, new Date());
     return this.prisma.user.count({
       where: {
         createdAt: {

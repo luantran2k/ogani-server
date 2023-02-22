@@ -9,4 +9,8 @@ export class AppController {
   getHello(): string {
     return `Api running at ${this.startTime.toLocaleString()}`;
   }
+  @Get('hello')
+  sayHello(): string {
+    return `Hello ogani api`;
+  }
 }

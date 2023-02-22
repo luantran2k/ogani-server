@@ -154,7 +154,7 @@ export class ProductsService {
     const products = await this.prisma.product.findMany({
       take: 10,
     });
-    console.log(products);
+    console.log('PRODUCT TEST: ', products);
     return products;
   }
 }

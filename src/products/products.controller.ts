@@ -41,6 +41,11 @@ export class ProductsController {
     return this.productsService.findAll({ search, page, quantity });
   }
 
+  @Get('test')
+  test() {
+    return this.productsService.test();
+  }
+
   @Get('home-page')
   getProductInfoHomePage() {
     return this.productsService.getProductInfoHomePage();

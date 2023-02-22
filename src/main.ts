@@ -4,10 +4,11 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const PORT = process.env.PORT || 30001;
   app.enableCors();
   app.useGlobalPipes(new ValidationPipe());
-  await app.listen(3000, () => {
-    console.log('http://localhost:3000');
+  await app.listen(PORT, () => {
+    console.log('Ogani service listening on port ' + PORT);
   });
 }
 bootstrap();

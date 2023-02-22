@@ -41,18 +41,32 @@ export class ProductsController {
     return this.productsService.findAll({ search, page, quantity });
   }
 
-  @Get('test')
-  test() {
-    return this.productsService.test();
+  @Get('hot-sale')
+  getHotSaleProducts() {
+    return this.productsService.getHotSaleProducts();
   }
 
-  @Get('home-page')
-  getProductInfoHomePage() {
-    return this.productsService.getProductInfoHomePage();
+  @Get('featured')
+  getFeatureProducts() {
+    return this.productsService.getFeatureProducts();
+  }
+
+  @Get('latest')
+  getLatestProduct() {
+    return this.productsService.getLatestProducts();
+  }
+
+  @Get('best-sellers')
+  getBestSellerProducts() {
+    return this.productsService.getBestSellerProducts();
+  }
+  @Get('top-rate')
+  getTopRateProducts() {
+    return this.productsService.getTopRateProducts();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id', ParseIntPipe) id: string) {
     return this.productsService.findOne(+id);
   }
 

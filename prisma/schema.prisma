@@ -114,15 +114,7 @@ model ProductReview {
   product   Product  @relation(fields: [productId], references: [id])
   productId Int
   images    String[]
-  rating    Rating
-}
-
-enum Rating {
-  Terrible
-  Poor
-  Average
-  Good
-  Excellent
+  rating    Int
 }
 
 model Blog {

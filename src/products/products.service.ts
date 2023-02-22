@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { PrismaService } from 'src/prisma/prisma.service';
+import { ProductCardType } from 'src/schemas/product';
 import BaseFilter from 'src/types/base/BaseFilter';
 import ultis from 'src/utils/ultis';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -98,19 +99,55 @@ export class ProductsService {
     return this.prisma.product.delete({ where: { id } });
   }
 
-  async getProductInfoHomePage() {
-    const categories = await this.prisma.productCategory.findMany({
-      take: 8,
+  getProductCategoies(quantity: number = 8) {
+    return this.prisma.productCategory.findMany({
+      take: quantity,
       orderBy: {
         ProductInCategory: {
           _count: 'desc',
         },
       },
     });
-    const featuredProductPromise = this.prisma.product.findMany({
+  }
+
+  async getHotSaleProducts(quantity: number = 8): Promise<ProductCardType[]> {
+    const products = await this.prisma.productVariants.findMany({
+      orderBy: {
+        salePercent: 'desc',
+      },
+      distinct: 'productId',
+      select: {
+        product: {
+          select: {
+            id: true,
+            name: true,
+            images: true,
+            ProductInCategory: true,
+            ProductVariants: true,
+          },
+        },
+      },
+      where: {
+        salePercent: {
+          gt: 0,
+        },
+      },
+      take: quantity,
+    });
+    return products.map((item) => {
+      const { ProductInCategory, ProductVariants, ...product } = item.product;
+      const categoryIds = ProductInCategory.map(
+        (category) => category.productCategoryId,
+      );
+      return { ...product, variants: ProductVariants, categoryIds };
+    });
+  }
+
+  async getFeatureProducts(catetoryIds: number[] = undefined) {
+    const products = await this.prisma.product.findMany({
       take: 8,
       where: {
-        id: { in: categories.map((categories) => categories.id) },
+        id: { in: catetoryIds },
       },
       select: {
         id: true,
@@ -125,7 +162,11 @@ export class ProductsService {
             variant: true,
           },
         },
-        ProductInCategory: true,
+        ProductInCategory: {
+          select: {
+            categogry: true,
+          },
+        },
       },
       orderBy: {
         OrderItem: {
@@ -133,22 +174,52 @@ export class ProductsService {
         },
       },
     });
-    const [featuredProductRaw] = await Promise.all([featuredProductPromise]);
-    const featuredProduct = featuredProductRaw.map((product) => {
-      const { ProductInCategory, ProductVariants, ...productInfo } = product;
+    return products.map((productRaw) => {
+      const { ProductInCategory, ProductVariants, ...product } = productRaw;
       return {
-        ...productInfo,
+        ...product,
         variants: ProductVariants,
-        categoryIds: ProductInCategory.map(
-          (category) => category.productCategoryId,
+        categories: ProductInCategory.map(
+          (productInCategory) => productInCategory.categogry,
         ),
       };
     });
-    return {
-      featuredProduct,
-      categories,
-    };
   }
+
+  getLatestProducts(quantity: number = 9) {
+    return this.prisma.product.findMany({
+      take: quantity,
+      orderBy: {
+        createdAt: 'desc',
+      },
+    });
+  }
+
+  getBestSellerProducts(quantity: number = 9) {
+    return this.prisma.product.findMany({
+      take: quantity,
+      orderBy: {
+        OrderItem: {
+          _count: 'desc',
+        },
+      },
+    });
+  }
+
+  getTopRateProducts(quantity: number = 9) {
+    return this.prisma.productReview.groupBy({
+      by: ['productId'],
+      _avg: {
+        rating: true,
+      },
+      orderBy: {
+        _avg: {
+          rating: 'desc',
+        },
+      },
+    });
+  }
+
   async test() {
     console.log('products/test');
     const products = await this.prisma.product.findMany({

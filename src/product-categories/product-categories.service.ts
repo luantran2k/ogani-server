@@ -20,6 +20,7 @@ export class ProductCategoriesService {
       select: {
         id: true,
         name: true,
+        image: true,
       },
       where: {
         name: {

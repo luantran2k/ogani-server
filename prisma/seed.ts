@@ -1,3 +1,4 @@
+import { productVariantSeed } from './seedData/productVariant';
 import { seedProducts } from './seedData/products';
 import { PrismaClient } from '@prisma/client';
 import { seedCategogriese } from './seedData/productCategory';
@@ -49,11 +50,19 @@ async function main() {
       });
     },
   );
+  const productVariants = productVariantSeed.map((variant) => {
+    return prisma.productVariants.upsert({
+      where: { id: variant.id },
+      create: { ...variant },
+      update: { ...variant },
+    });
+  });
 
   Promise.all([
     ...seedProductsPromise,
     ...productCategories,
     ...productsInCategories,
+    ...productVariants,
   ]);
 }
 

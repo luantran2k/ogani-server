@@ -10,7 +10,12 @@ import { AuthService } from './auth.service';
 import { RefreshTokenStrategy } from './refreshToken.strategy';
 
 @Module({
-  imports: [UsersModule, JwtModule.register({}), ConfigModule, MailModule],
+  imports: [
+    ConfigModule.forRoot(),
+    UsersModule,
+    JwtModule.register({}),
+    MailModule,
+  ],
   providers: [AuthService, AccessTokenStrategy, RefreshTokenStrategy],
   exports: [AuthService],
   controllers: [AuthController],

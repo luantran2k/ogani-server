@@ -8,7 +8,9 @@ import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { Product, ProductCardType } from 'src/schemas/product';
 import BaseFilter from 'src/types/base/BaseFilter';
+import { ProductFilter, SortType } from 'src/types/product';
 import { CreateProductDto } from './dto/create-product.dto';
+import { ProductFilterQuery } from './dto/filter.query';
 import { UpdateProductDto } from './dto/update-product.dto';
 
 type ProductCardTypeRaw = Product & {
@@ -50,7 +52,19 @@ export class ProductsService {
     }
   }
 
-  async findAll({ page, quantity, search }: BaseFilter) {
+  async findAll(filter: ProductFilterQuery) {
+    const {
+      page = 0,
+      quantity = 25,
+      search,
+      minPrice,
+      maxPrice,
+      usePrice,
+      categoryId,
+      sort,
+      total: isNeedTotal,
+    } = filter;
+
     const productsPromise = this.prisma.product.findMany({
       take: quantity,
       skip: page * quantity,
@@ -63,26 +77,60 @@ export class ProductsService {
       where: {
         name: {
           contains: search,
+          mode: 'insensitive',
+        },
+        ProductInCategory: {
+          some: {
+            productCategoryId: categoryId,
+          },
+        },
+        ProductVariants: {
+          some: {
+            price: usePrice
+              ? {
+                  gte: minPrice,
+                  lte: maxPrice,
+                }
+              : {},
+          },
         },
       },
       orderBy: {
         createdAt: 'desc',
       },
     });
+
     const totalPromises = this.prisma.product.count({
       where: {
         name: {
           contains: search,
+          mode: 'insensitive',
+        },
+        ProductInCategory: {
+          some: {
+            productCategoryId: categoryId,
+          },
+        },
+        ProductVariants: {
+          some: {
+            price: usePrice
+              ? {
+                  gte: minPrice,
+                  lte: maxPrice,
+                }
+              : {},
+          },
         },
       },
     });
+
     const [products, total] = await Promise.all([
       productsPromise,
       totalPromises,
     ]);
     return {
       products: this.convertToProductCardType(products),
-      total,
+      total: total,
     };
   }
 

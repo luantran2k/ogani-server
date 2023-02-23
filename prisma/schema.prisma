@@ -103,7 +103,7 @@ model ProductCategory {
 model ProductInCategory {
   product           Product         @relation(fields: [productId], references: [id])
   productId         Int
-  categogry         ProductCategory @relation(fields: [productCategoryId], references: [id])
+  category          ProductCategory @relation(fields: [productCategoryId], references: [id])
   productCategoryId Int
 
   @@id([productId, productCategoryId])

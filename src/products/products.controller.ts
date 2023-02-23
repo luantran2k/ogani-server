@@ -5,6 +5,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseBoolPipe,
   ParseIntPipe,
   Patch,
   Post,
@@ -17,6 +18,13 @@ import { FilesInterceptor } from '@nestjs/platform-express';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductsService } from './products.service';
+
+export type SortType =
+  | 'sale'
+  | 'discount'
+  | 'latest'
+  | 'accending price'
+  | 'decending price';
 
 @Controller('products')
 export class ProductsController {
@@ -37,6 +45,15 @@ export class ProductsController {
     @Query('page', new DefaultValuePipe(0), ParseIntPipe) page?: number,
     @Query('quantity', new DefaultValuePipe(20), ParseIntPipe)
     quantity?: number,
+    @Query('total', new DefaultValuePipe(false), ParseBoolPipe)
+    total?: boolean,
+    @Query('categoryId', new DefaultValuePipe(-1), ParseIntPipe)
+    categoryId?: number,
+    @Query('minPrice', new DefaultValuePipe(0), ParseIntPipe)
+    minPrice?: number,
+    @Query('maxPrice', new DefaultValuePipe(Number.POSITIVE_INFINITY))
+    maxPrice?: number,
+    @Query('sort', new DefaultValuePipe('latest')) sort?: SortType,
   ) {
     return this.productsService.findAll({ search, page, quantity });
   }

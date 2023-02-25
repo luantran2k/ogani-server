@@ -43,10 +43,12 @@ model Order {
 }
 
 model OrderStatus {
-  id      Int             @id @default(autoincrement())
-  order   Order           @relation(fields: [orderId], references: [id])
-  orderId Int
-  status  OrderStatusEnum
+  id        Int             @id @default(autoincrement())
+  order     Order           @relation(fields: [orderId], references: [id])
+  orderId   Int
+  status    OrderStatusEnum
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
 }
 
 enum OrderStatusEnum {

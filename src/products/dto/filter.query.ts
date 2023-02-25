@@ -2,7 +2,7 @@ import { Transform, Type } from 'class-transformer';
 import { IsBoolean, IsNumber, IsOptional } from 'class-validator';
 import { ProductFilter, SortType } from 'src/types/product';
 
-export class ProductFilterQuery implements ProductFilter {
+export class ProductQueryFilter implements ProductFilter {
   @IsOptional()
   search?: string;
 

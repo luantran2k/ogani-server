@@ -13,7 +13,7 @@ import {
 } from '@nestjs/common';
 import { FilesInterceptor } from '@nestjs/platform-express';
 import { CreateProductDto } from './dto/create-product.dto';
-import { ProductFilterQuery } from './dto/filter.query';
+import { ProductQueryFilter } from './dto/filter.query';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { ProductsService } from './products.service';
 
@@ -31,8 +31,8 @@ export class ProductsController {
   }
 
   @Get()
-  async findAll(@Query() filter: ProductFilterQuery) {
-    return this.productsService.findAll(filter);
+  async findAll(@Query() filter: ProductQueryFilter) {
+    return this.productsService.findProducts(filter);
   }
 
   @Get('hot-sale')

@@ -58,4 +58,9 @@ export type ProductCardType = Pick<Product, 'id' | 'name' | 'images'> & {
   categories: ProductCategory[];
 };
 
+export type ProductsCardApiResponse = {
+  products: ProductCardType[];
+  total?: number;
+};
+
 export default productSchema;

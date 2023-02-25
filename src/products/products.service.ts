@@ -3,14 +3,18 @@ import {
   ProductCategory,
   ProductInCategory,
   ProductVariants,
+  Prisma,
 } from '@prisma/client';
+import { filter } from 'rxjs';
 import { CloudinaryService } from 'src/cloudinary/cloudinary.service';
 import { PrismaService } from 'src/prisma/prisma.service';
-import { Product, ProductCardType } from 'src/schemas/product';
-import BaseFilter from 'src/types/base/BaseFilter';
-import { ProductFilter, SortType } from 'src/types/product';
+import {
+  Product,
+  ProductCardType,
+  ProductsCardApiResponse,
+} from 'src/schemas/product';
 import { CreateProductDto } from './dto/create-product.dto';
-import { ProductFilterQuery } from './dto/filter.query';
+import { ProductQueryFilter } from './dto/filter.query';
 import { UpdateProductDto } from './dto/update-product.dto';
 
 type ProductCardTypeRaw = Product & {
@@ -22,6 +26,10 @@ type ProductCardTypeRaw = Product & {
 
 @Injectable()
 export class ProductsService {
+  private readonly baseFilter: ProductQueryFilter = {
+    page: 0,
+    quantity: 12,
+  };
   constructor(
     private readonly prisma: PrismaService,
     private readonly cloudinary: CloudinaryService,
@@ -52,7 +60,47 @@ export class ProductsService {
     }
   }
 
-  async findAll(filter: ProductFilterQuery) {
+  getFilterForProductQuery(
+    filter: ProductQueryFilter,
+  ): Prisma.ProductWhereInput {
+    const { search, categoryId, usePrice, minPrice, maxPrice } = filter;
+    const condition: Prisma.ProductWhereInput = {
+      name: {
+        contains: search,
+        mode: 'insensitive',
+      },
+      ProductInCategory: {
+        some: {
+          productCategoryId: categoryId,
+        },
+      },
+      ProductVariants: {
+        some: {
+          price: usePrice
+            ? {
+                gte: minPrice,
+                lte: maxPrice,
+              }
+            : {},
+        },
+      },
+    };
+    return condition;
+  }
+
+  async findProducts(filter: ProductQueryFilter) {
+    switch (filter.sort) {
+      case 'latest':
+      case 'sale':
+        return this.findAll(filter);
+      case 'discount':
+        return this.getHotSaleProducts(filter, false);
+      default:
+        return this.findAll(filter);
+    }
+  }
+
+  async findAll(filter: ProductQueryFilter) {
     const {
       page = 0,
       quantity = 25,
@@ -75,54 +123,45 @@ export class ProductsService {
         },
       },
       where: {
-        name: {
-          contains: search,
-          mode: 'insensitive',
-        },
-        ProductInCategory: {
-          some: {
-            productCategoryId: categoryId,
-          },
-        },
-        ProductVariants: {
-          some: {
-            price: usePrice
-              ? {
-                  gte: minPrice,
-                  lte: maxPrice,
-                }
-              : {},
-          },
-        },
+        ...this.getFilterForProductQuery(filter),
       },
       orderBy: {
-        createdAt: 'desc',
+        ...(sort === 'sale'
+          ? {
+              OrderItem: {
+                _count: 'desc',
+              },
+            }
+          : { createdAt: 'desc' }),
       },
     });
 
-    const totalPromises = this.prisma.product.count({
-      where: {
-        name: {
-          contains: search,
-          mode: 'insensitive',
-        },
-        ProductInCategory: {
-          some: {
-            productCategoryId: categoryId,
+    let totalPromises;
+    if (isNeedTotal) {
+      totalPromises = this.prisma.product.count({
+        where: {
+          name: {
+            contains: search,
+            mode: 'insensitive',
+          },
+          ProductInCategory: {
+            some: {
+              productCategoryId: categoryId,
+            },
+          },
+          ProductVariants: {
+            some: {
+              price: usePrice
+                ? {
+                    gte: minPrice,
+                    lte: maxPrice,
+                  }
+                : {},
+            },
           },
         },
-        ProductVariants: {
-          some: {
-            price: usePrice
-              ? {
-                  gte: minPrice,
-                  lte: maxPrice,
-                }
-              : {},
-          },
-        },
-      },
-    });
+      });
+    }
 
     const [products, total] = await Promise.all([
       productsPromise,
@@ -177,8 +216,12 @@ export class ProductsService {
     });
   }
 
-  async getHotSaleProducts(quantity: number = 8) {
-    const variants = await this.prisma.productVariants.findMany({
+  async getHotSaleProducts(
+    filter: ProductQueryFilter = this.baseFilter,
+    haveSalePercent: boolean = true,
+  ): Promise<ProductsCardApiResponse> {
+    const { quantity = 12 } = filter;
+    const variantsPromise = this.prisma.productVariants.findMany({
       orderBy: {
         salePercent: 'desc',
       },
@@ -204,20 +247,44 @@ export class ProductsService {
       },
       where: {
         salePercent: {
-          gt: 0,
+          gt: haveSalePercent ? 0 : undefined,
+        },
+        product: {
+          ...this.getFilterForProductQuery(filter),
         },
       },
       take: quantity,
     });
-    return this.convertToProductCardType(
-      variants.map((variant) => variant.product),
-    );
+    let totalPromise;
+    if (filter.total) {
+      totalPromise = this.prisma.productVariants.count({
+        where: {
+          salePercent: {
+            gt: haveSalePercent ? 0 : undefined,
+          },
+          product: {
+            ...this.getFilterForProductQuery(filter),
+          },
+        },
+      });
+    }
+
+    const [variants, total] = await Promise.all([
+      variantsPromise,
+      totalPromise,
+    ]);
+    return {
+      products: this.convertToProductCardType(
+        variants.map((variant) => variant.product),
+      ),
+      total,
+    };
   }
 
   async getFeatureProducts(
     catetoryIds: number[] = undefined,
-  ): Promise<ProductCardType[]> {
-    const products = await this.prisma.product.findMany({
+  ): Promise<ProductsCardApiResponse> {
+    const productsPromise = this.prisma.product.findMany({
       take: 8,
       where: {
         id: { in: catetoryIds },
@@ -243,11 +310,16 @@ export class ProductsService {
         },
       },
     });
-    return this.convertToProductCardType(products);
+    const [products] = await Promise.all([productsPromise]);
+    return {
+      products: this.convertToProductCardType(products),
+    };
   }
 
-  async getLatestProducts(quantity: number = 9): Promise<ProductCardType[]> {
-    const products = await this.prisma.product.findMany({
+  async getLatestProducts(
+    quantity: number = 9,
+  ): Promise<ProductsCardApiResponse> {
+    const productsPromise = this.prisma.product.findMany({
       take: quantity,
       orderBy: {
         createdAt: 'desc',
@@ -265,22 +337,17 @@ export class ProductsService {
         },
       },
     });
-    return products.map((product) => {
-      const { ProductVariants, ProductInCategory, ...info } = product;
-      return {
-        ...info,
-        variants: ProductVariants,
-        categories: ProductInCategory.map(
-          (productInCategory) => productInCategory.category,
-        ),
-      };
-    });
+    const [products] = await Promise.all([productsPromise, ,]);
+    return {
+      products: this.convertToProductCardType(products),
+    };
   }
 
   async getBestSellerProducts(
-    quantity: number = 9,
-  ): Promise<ProductCardType[]> {
-    const products = await this.prisma.product.findMany({
+    filter: ProductQueryFilter = this.baseFilter,
+  ): Promise<ProductsCardApiResponse> {
+    const { quantity = 12 } = filter;
+    const productsPromise = await this.prisma.product.findMany({
       take: quantity,
       orderBy: {
         OrderItem: {
@@ -299,12 +366,32 @@ export class ProductsService {
           },
         },
       },
+      where: {
+        ...this.getFilterForProductQuery(filter),
+      },
     });
-    return this.convertToProductCardType(products);
+    let totalPromise;
+    if (filter.total) {
+      totalPromise = this.prisma.product.count({
+        where: {
+          ...this.getFilterForProductQuery(filter),
+        },
+      });
+    }
+    const [products, total] = await Promise.all([
+      productsPromise,
+      totalPromise,
+    ]);
+    return {
+      products: this.convertToProductCardType(products),
+      total,
+    };
   }
 
-  async getTopRateProducts(quantity: number = 9): Promise<ProductCardType[]> {
-    const products = await this.prisma.product.findMany({
+  async getTopRateProducts(
+    quantity: number = 9,
+  ): Promise<ProductsCardApiResponse> {
+    const productsPromise = await this.prisma.product.findMany({
       select: {
         id: true,
         name: true,
@@ -326,6 +413,10 @@ export class ProductsService {
         },
       },
     });
-    return this.convertToProductCardType(products);
+
+    const [products] = await Promise.all([productsPromise, ,]);
+    return {
+      products: this.convertToProductCardType(products),
+    };
   }
 }
